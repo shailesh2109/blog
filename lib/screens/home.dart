@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-
+import 'package:sub_space/helper/routes.dart';
 import 'package:sub_space/models/blog_model.dart';
-
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:sub_space/helper/helper.dart';
+import 'package:sub_space/screens/details_home.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -16,6 +15,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  String substring='slate';
   void closeAppUsingSystemPop() {
     SystemChannels.platform.invokeMethod('SystemNavigator.pop');
   }
@@ -24,7 +24,6 @@ class _HomeState extends State<Home> {
     super.initState();
     getData();
   }
-  List<BlogModel> catalogModel=[];
 
     getData()async{
      final String url = 'https://intent-kit-16.hasura.app/api/rest/blogs';
@@ -36,32 +35,40 @@ class _HomeState extends State<Home> {
     });
 
     if (response.statusCode == 200) {
-      // Request successful, handle the response data here
       print('Response data: ${response.body}');
       final data=jsonDecode(response.body.toString());
+      print(data);
       final finalData=data["blogs"];
+      print(finalData);
       for(Map<String,dynamic> index in finalData){
-        catalogModel.add(BlogModel.fromJson(index));
+        if(BlogModel.fromJson(index).imageUrl.contains(substring)){
+          continue;
+        }
+        else{
+            BlogList.catalogModel.add(BlogModel.fromJson(index));
+        }
+        
       }
-      print(catalogModel);
-      return catalogModel;
+      print(BlogList.catalogModel);
+      return BlogList.catalogModel;
       
     } else {
-      // Request failed
       print('Request failed with status code: ${response.statusCode}');
       print('Response data: ${response.body}');
-      return catalogModel;
+      return BlogList.catalogModel;
     }
   } catch (e) {
-    // Handle any errors that occurred during the request
     print('Error: $e');
-    return catalogModel;
+    return BlogList.catalogModel;
   }
   }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(onPressed: () {
+        MyRoutes.favourite(context);
+      },child: Icon(Icons.favorite),),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +81,7 @@ class _HomeState extends State<Home> {
                     },
                     icon: const Icon(Icons.arrow_back_ios)),
                     SizedBox(width: MediaQuery.sizeOf(context).width*.25,),
-                    Text("ubSpace",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 25),)
+                    const Text("ubSpace",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 25),)
                 ],
               ),
       
@@ -83,17 +90,26 @@ class _HomeState extends State<Home> {
                   future: getData(),
                   builder: (context,snapshot) {
                     if(snapshot.hasData){
-                      return ListView.builder(itemCount: catalogModel.length,itemBuilder: (context,index){
+                      return ListView.builder(itemCount: BlogList.catalogModel.length,itemBuilder: (context,index){
+                        final catalog=BlogList.catalogModel[index];
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            Image.network(catalogModel[index].imageUrl,width: ModifiedConstraints.width(context),fit: BoxFit.fitWidth,),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(catalogModel[index].title,style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+                        child: InkWell(
+                          onTap: ()=>MyRoutes.detailsHome(context, DetailsHome(catalog:catalog)),
+                          child: Hero(
+                            tag: Key(catalog.id.toString()),
+                            child: Container(
+                              child: Column(
+                                children: [
+                                  Image.network(BlogList.catalogModel[index].imageUrl,width: ModifiedConstraints.width(context),fit: BoxFit.fitWidth,),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(BlogList.catalogModel[index].title,style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
                       );
                     });
