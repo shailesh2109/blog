@@ -1,5 +1,8 @@
 
 import 'dart:convert';
+class BlogList{
+ static List<BlogModel> catalogModel=[];
+}
 
 List<BlogModel> blogModelFromJson(String str) => List<BlogModel>.from(json.decode(str).map((x) => BlogModel.fromJson(x)));
 
